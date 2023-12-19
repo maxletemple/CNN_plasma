@@ -1,0 +1,9 @@
+{
+    "C_Cpp.errorSquiggles": "disabled",
+    "files.associations": {
+        "endian.h": "c",
+        "assert.h": "c",
+        "cnn.h": "c",
+        "string.h": "c"
+    }
+}

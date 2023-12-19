@@ -1,0 +1,12 @@
+prefix=/home/legal/gcc_mips/addontools-1.5.4-Linux-i686
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libelf
+Description: ELF object file access library
+Version: 0.8.13
+Requires:
+Conflicts:
+Libs: -L${libdir} -lelf
+Cflags: -I${includedir}/libelf -I${includedir}

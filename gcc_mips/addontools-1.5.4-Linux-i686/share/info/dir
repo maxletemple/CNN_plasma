@@ -1,0 +1,64 @@
+Ceci est le fichier .../info/dir, lequel contient le noeud 
+le plus haut dans la hiérarchie Info, noeud appelé (dir)Top.
+La première fois que Info est invoqué, vous démarrez la recherche 
+à partir de ce noeud.
+
+File: dir,	Node: Top	Ceci est le haut de l'arborescence INFO
+
+  Ceci (le noeud Répertoire) fournit un menu des sujets majeurs.
+  Taper « q » pour quitter, « ? » pour lister toutes les commandes Info,
+  « d » pour revenir à cet endroit,
+  « h » fournit un guide d'initiation pour les nouveaux venus,
+  « mEmacs<Return> » démarre une consultation du manuel Emacs, etc.
+
+  En Emacs, vous pouvez cliquer avec le bouton-2 de la souris sur un item menu 
+  ou sur une référence croisée pour le sélectionner.
+
+* Menu:
+
+Archiving
+* Tar: (tar).                   Making tape (or disk) archives.
+
+Basics
+* Bash: (bash).                 The GNU Bourne-Again SHell.
+
+GNU libraries
+* gmp: (gmp).                   GNU Multiple Precision Arithmetic Library.
+
+GNU programming tools
+* Libtool: (libtool).           Generic shared library support script.
+
+Individual utilities
+* libtool-invocation: (libtool)Invoking libtool.
+                                                Running the `libtool' script.
+* libtoolize: (libtool)Invoking libtoolize.     Adding libtool support.
+* tar: (tar)tar invocation.                     Invoking GNU `tar'.
+
+Miscellaneous
+* mpc: (mpc.info).              Multiple Precision Complex Library.
+
+Software development
+* Make: (make).                 Remake files automatically.
+
+Software libraries
+* mpfr: (mpfr).                 Multiple Precision Floating-Point Reliable 
+                                  Library.
+
+Texinfo documentation system
+* Info: (info).                 How to use the documentation browsing system.
+* Texinfo: (texinfo).           The GNU documentation format.
+* info standalone: (info-stnd). Read Info documents without Emacs.
+* infokey: (info-stnd)Invoking infokey.
+                                Compile Info customizations.
+* install-info: (texinfo)Invoking install-info.
+                                Update info/dir entries.
+* makeinfo: (texinfo)Invoking makeinfo.
+                                Translate Texinfo source.
+* texindex: (texinfo)Format with tex/texindex.
+                                Sort Texinfo index files.
+* pdftexi2dvi: (texinfo)PDF Output.
+                                PDF output for Texinfo.
+* texi2dvi: (texinfo)Format with texi2dvi.
+                                Print Texinfo documents.
+* texi2pdf: (texinfo)PDF Output.
+                                PDF output for Texinfo.
