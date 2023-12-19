@@ -7,114 +7,6 @@
 #include <string.h>
 #include "cnn.h"
 
-
-
-typedef struct _IdxFile
-{
-    int ndims;
-    uint32_t *dims;
-    uint8_t *data;
-} IdxFile;
-
-/* IdxFile_read(fp)
-   Reads all the data from given fp.
-*/
-IdxFile *IdxFile_read(FILE *fp)
-{
-    /* Read the file header. */
-    struct
-    {
-        uint16_t magic;
-        uint8_t type;
-        uint8_t ndims;
-        /* big endian */
-    } header;
-    if (fread(&header, sizeof(header), 1, fp) != 1)
-        return NULL;
-#if DEBUG_IDXFILE
-    fprintf(stderr, "IdxFile_read: magic=%x, type=%x, ndims=%u\n",
-            header.magic, header.type, header.ndims);
-#endif
-    if (header.magic != 0)
-        return NULL;
-    if (header.type != 0x08)
-        return NULL;
-    if (header.ndims < 1)
-        return NULL;
-
-    /* Read the dimensions. */
-    IdxFile *self = (IdxFile *)calloc(1, sizeof(IdxFile));
-    if (self == NULL)
-        return NULL;
-    self->ndims = header.ndims;
-    self->dims = (uint32_t *)calloc(self->ndims, sizeof(uint32_t));
-    if (self->dims == NULL)
-        return NULL;
-
-    if (fread(self->dims, sizeof(uint32_t), self->ndims, fp) == self->ndims)
-    {
-        uint32_t nbytes = sizeof(uint8_t);
-        for (int i = 0; i < self->ndims; i++)
-        {
-            /* Fix the byte order. */
-
-
-            uint32_t size = self->dims[i];
-#if DEBUG_IDXFILE
-            fprintf(stderr, "IdxFile_read: size[%d]=%u\n", i, size);
-#endif
-            nbytes *= size;
-            self->dims[i] = size;
-        }
-        /* Read the data. */
-        self->data = (uint8_t *)malloc(nbytes);
-        if (self->data != NULL)
-        {
-            fread(self->data, sizeof(uint8_t), nbytes, fp);
-#if DEBUG_IDXFILE
-            fprintf(stderr, "IdxFile_read: read: %lu bytes\n", n);
-#endif
-        }
-    }
-
-    return self;
-}
-
-/* IdxFile_destroy(self)
-   Release the memory.
-*/
-void IdxFile_destroy(IdxFile *self)
-{
-    if (self->dims != NULL)
-    {
-        free(self->dims);
-        self->dims = NULL;
-    }
-    if (self->data != NULL)
-    {
-        free(self->data);
-        self->data = NULL;
-    }
-    free(self);
-}
-
-/* IdxFile_get1(self, i)
-   Get the i-th record of the Idx1 file. (uint8_t)
- */
-uint8_t IdxFile_get1(IdxFile *self, int i)
-{
-    return self->data[i];
-}
-
-/* IdxFile_get3(self, i, out)
-   Get the i-th record of the Idx3 file. (matrix of uint8_t)
- */
-void IdxFile_get3(IdxFile *self, int i, uint8_t *out)
-{
-    size_t n = self->dims[1] * self->dims[2];
-    memcpy(out, &self->data[i * n], n);
-}
-
 #define INPUT_DEPTH 1
 #define INPUT_WIDTH 28
 #define INPUT_HEIGHT 28
@@ -135,7 +27,6 @@ void IdxFile_get3(IdxFile *self, int i, uint8_t *out)
 
 #define FULL1_NEURONS 10
 
-
 Layer linput;
 Layer lconv1;
 Layer lconv2;
@@ -153,6 +44,7 @@ fixed_t inter1[CONV1_DEPTH * CONV1_WIDTH * CONV1_HEIGHT];
 fixed_t inter2[CONV2_DEPTH * CONV2_WIDTH * CONV2_HEIGHT];
 fixed_t output[FULL1_NEURONS];
 
+uint8_t img[28 * 28] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84, 185, 159, 151, 60, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 222, 254, 254, 254, 254, 241, 198, 198, 198, 198, 198, 198, 198, 198, 170, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 67, 114, 72, 114, 163, 227, 254, 225, 254, 254, 254, 250, 229, 254, 254, 140, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 66, 14, 67, 67, 67, 59, 21, 236, 254, 106, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 83, 253, 209, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 233, 255, 83, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 129, 254, 238, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 59, 249, 254, 62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 133, 254, 187, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 205, 248, 58, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 126, 254, 182, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 251, 240, 57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 221, 254, 166, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 203, 254, 219, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 254, 254, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 224, 254, 115, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 133, 254, 254, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 61, 242, 254, 254, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 254, 254, 219, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 121, 254, 207, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
 
 int main(int argc, char *argv[]) {
     
@@ -172,9 +64,8 @@ int main(int argc, char *argv[]) {
     lconv1.outputs = inter1;
     lconv2.outputs = inter2;
     lfull1.outputs = output;
-    
-
-
+#define LOAD_WEIGHTS
+#ifdef LOAD_WEIGHTS
     FILE *fp = fopen("weights_fixed.bin", "rb");
     if (fp == NULL){
         printf("Error: cannot open weights.bin\n");
@@ -189,24 +80,31 @@ int main(int argc, char *argv[]) {
 
     fclose(fp);
 
+#else
+    fixed_t values[5] = {FIXED_FROM_FLOAT(-0.5f), FIXED_FROM_FLOAT(-0.25f), FIXED_FROM_FLOAT(0), FIXED_FROM_FLOAT(0.25f), FIXED_FROM_FLOAT(0.5f)}
+    for (int i = 0; i < 16*1*5*5; i++){
+        lconv1.weights[i] = values[i % 5];
+    }
+    for (int i = 0; i < 16; i++){
+        lconv1.biases[i] = values[i % 5];
+    }
+    for (int i = 0; i < 32*16*5*5; i++){
+        lconv2.weights[i] = values[i % 5];
+    }
+    for (int i = 0; i < 32; i++){
+        lconv2.biases[i] = values[i % 5];
+    }
+    for (int i = 0; i < 15680; i++){
+        lfull1.weights[i] = values[i % 5];
+    }
+    for (int i = 0; i < 10; i++){
+        lfull1.biases[i] = values[i % 5];
+    }
+    
+#endif
     
     for (int i = 0; i < 28*28; i++){
-        input[i] = FIXED_FROM_FLOAT(1);
-    }
-
-    //load first image from mnist
-    fp = fopen("data/t10k-images-idx3-ubyte", "rb");
-    if (fp == NULL){
-        printf("Error: cannot open t10k-images-idx3-ubyte\n");
-        return 1;
-    }
-    IdxFile *idx = IdxFile_read(fp);
-    fclose(fp);
-
-    for (int i = 0; i < 28*28; i++){
-        //random number between 0 and 1
-        input[i] = FIXED_FROM_FLOAT(random() / (float)RAND_MAX);
-    
+        input[i] = FIXED_FROM_FLOAT(img[i] / 255.0f);
     }
 
     layerSetInputs(&linput, input);

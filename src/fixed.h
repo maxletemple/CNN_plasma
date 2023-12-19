@@ -5,7 +5,7 @@
 
 typedef int32_t fixed_t;
 
-#define FIXED_BITS 16
+#define FIXED_BITS 12
 #define FIXED_SCALE (1 << FIXED_BITS)
 #define FIXED_MASK (FIXED_SCALE - 1)
 
@@ -16,7 +16,6 @@ typedef int32_t fixed_t;
 #define FIXED_FROM_FLOAT(x) ((fixed_t)((x) * FIXED_SCALE))
 #define FIXED_TO_FLOAT(x) ((float)(x) / FIXED_SCALE)
 
-#define FIXED_MUL(x, y) ((((int32_t)(x)) * (y)) << FIXED_BITS)
-#define FIXED_DIV(x, y) (((int32_t)(x)) >> FIXED_BITS / (y))
+#define FIXED_MUL(x, y) ((((int32_t)(x)) * (int32_t)(y)) >> FIXED_BITS)
 
 #endif // FIXED_H

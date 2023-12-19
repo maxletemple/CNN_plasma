@@ -4,8 +4,8 @@
 
 
 int main(int argc, char *argv[]) {
-    float a = -4.061355f;
-    float b = 3.5f;
+    float a = 3.2f;
+    float b = -5.8f;
 
     fixed_t fa = FIXED_FROM_FLOAT(a);
     fixed_t fb = FIXED_FROM_FLOAT(b);
