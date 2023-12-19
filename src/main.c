@@ -115,30 +115,80 @@ void IdxFile_get3(IdxFile *self, int i, uint8_t *out)
     memcpy(out, &self->data[i * n], n);
 }
 
+#define INPUT_DEPTH 1
+#define INPUT_WIDTH 28
+#define INPUT_HEIGHT 28
+
+#define CONV1_DEPTH 16
+#define CONV1_WIDTH 14
+#define CONV1_HEIGHT 14
+#define CONV1_KERNSIZE 5
+#define CONV1_PADDING 2
+#define CONV1_STRIDE 2
+
+#define CONV2_DEPTH 32
+#define CONV2_WIDTH 7
+#define CONV2_HEIGHT 7
+#define CONV2_KERNSIZE 5
+#define CONV2_PADDING 2
+#define CONV2_STRIDE 2
+
+#define FULL1_NEURONS 10
+
+
+Layer linput;
+Layer lconv1;
+Layer lconv2;
+Layer lfull1;
+
+fixed_t conv1_weights[CONV1_DEPTH * INPUT_DEPTH * CONV1_KERNSIZE * CONV1_KERNSIZE];
+fixed_t conv1_biases[CONV1_DEPTH];
+fixed_t conv2_weights[CONV2_DEPTH * CONV1_DEPTH * CONV2_KERNSIZE * CONV2_KERNSIZE];
+fixed_t conv2_biases[CONV2_DEPTH];
+fixed_t full1_weights[FULL1_NEURONS * CONV2_DEPTH * CONV2_WIDTH * CONV2_HEIGHT];
+fixed_t full1_biases[FULL1_NEURONS];
+
+fixed_t input[INPUT_DEPTH * INPUT_WIDTH * INPUT_HEIGHT];
+fixed_t inter1[CONV1_DEPTH * CONV1_WIDTH * CONV1_HEIGHT];
+fixed_t inter2[CONV2_DEPTH * CONV2_WIDTH * CONV2_HEIGHT];
+fixed_t output[FULL1_NEURONS];
+
+
 int main(int argc, char *argv[]) {
     
-    Layer *linput = layerCreateInput(1, 28, 28);
-    Layer *lconv1 = layerCreateConv(linput, 16, 14, 14, 5, 2, 2);
-    Layer *lconv2 = layerCreateConv(lconv1, 32, 7, 7, 5, 2, 2);
-    Layer *lfull1 = layerCreateFull(lconv2, 10);
+    layerCreateInput(&linput, INPUT_DEPTH, INPUT_WIDTH, INPUT_HEIGHT);
+    layerCreateConv(&lconv1, &linput, CONV1_DEPTH, CONV1_WIDTH, CONV1_HEIGHT, CONV1_KERNSIZE, CONV1_PADDING, CONV1_STRIDE);
+    layerCreateConv(&lconv2, &lconv1, CONV2_DEPTH, CONV2_WIDTH, CONV2_HEIGHT, CONV2_KERNSIZE, CONV2_PADDING, CONV2_STRIDE);
+    layerCreateFull(&lfull1, &lconv2, FULL1_NEURONS);
 
-    //load weights
+    lconv1.weights = conv1_weights;
+    lconv1.biases = conv1_biases;
+    lconv2.weights = conv2_weights;
+    lconv2.biases = conv2_biases;
+    lfull1.weights = full1_weights;
+    lfull1.biases = full1_biases;
+
+    linput.outputs = input;
+    lconv1.outputs = inter1;
+    lconv2.outputs = inter2;
+    lfull1.outputs = output;
+    
+
 
     FILE *fp = fopen("weights_fixed.bin", "rb");
     if (fp == NULL){
         printf("Error: cannot open weights.bin\n");
         return 1;
     }
-    fread(lconv1->weights, sizeof(fixed_t), 16*1*5*5, fp);
-    fread(lconv1->biases, sizeof(fixed_t), 16, fp);
-    fread(lconv2->weights, sizeof(fixed_t), 32*16*5*5, fp);
-    fread(lconv2->biases, sizeof(fixed_t), 32, fp);
-    fread(lfull1->weights, sizeof(fixed_t), 15680, fp);
-    fread(lfull1->biases, sizeof(fixed_t), 10, fp);
+    fread(lconv1.weights, sizeof(fixed_t), 16*1*5*5, fp);
+    fread(lconv1.biases, sizeof(fixed_t), 16, fp);
+    fread(lconv2.weights, sizeof(fixed_t), 32*16*5*5, fp);
+    fread(lconv2.biases, sizeof(fixed_t), 32, fp);
+    fread(lfull1.weights, sizeof(fixed_t), 15680, fp);
+    fread(lfull1.biases, sizeof(fixed_t), 10, fp);
 
     fclose(fp);
 
-    fixed_t *input = (fixed_t*)malloc(sizeof(fixed_t)*28*28);
     
     for (int i = 0; i < 28*28; i++){
         input[i] = FIXED_FROM_FLOAT(1);
@@ -154,15 +204,12 @@ int main(int argc, char *argv[]) {
     fclose(fp);
 
     for (int i = 0; i < 28*28; i++){
-        input[i] = FIXED_FROM_FLOAT((float)idx->data[i]/255.0f);
+        //random number between 0 and 1
+        input[i] = FIXED_FROM_FLOAT(random() / (float)RAND_MAX);
+    
     }
 
-
-    fixed_t *output = (fixed_t*)malloc(sizeof(fixed_t)*10);
-
-    layerSetInputs(linput, input);
-    layerGetOutputs(lfull1, output);
-
+    layerSetInputs(&linput, input);
 
     for (int i = 0; i < 10; i++){
         printf("%f\n", FIXED_TO_FLOAT(output[i]));

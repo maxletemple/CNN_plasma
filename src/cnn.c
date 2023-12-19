@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Layer* LayerCreate( LayerType type, Layer* lprev, int depth, int width, int height, int nbiases, int nweights){
-    Layer *self = (Layer*)malloc(sizeof(Layer));
+void LayerCreate(Layer* self, LayerType type, Layer* lprev, int depth, int width, int height, int nbiases, int nweights){
 
     self->type = type;
     self->lprev = lprev;
@@ -19,30 +18,26 @@ Layer* LayerCreate( LayerType type, Layer* lprev, int depth, int width, int heig
     self->height = height;
 
     self->nbiases = nbiases;
-    self->biases = (fixed_t*)malloc(sizeof(fixed_t)*nbiases);
 
     self->nweights = nweights;
-    self->weights = (fixed_t*)malloc(sizeof(fixed_t)*nweights);
 
     self->noutputs = depth*width*height;
-    self->outputs = (fixed_t*)malloc(sizeof(fixed_t)*self->noutputs);
 
 }
 
-Layer* layerCreateInput(int depth, int width, int height){
-    return LayerCreate(LAYER_INPUT, NULL, depth, width, height, 0, 0);
+void layerCreateInput(Layer* self, int depth, int width, int height){
+    LayerCreate(self, LAYER_INPUT, NULL, depth, width, height, 0, 0);
 }
 
-Layer* layerCreateFull(Layer *lprev, int nneurons){
-    return  LayerCreate(LAYER_FULL, lprev, nneurons, 1, 1, nneurons, lprev->noutputs * nneurons);
+void layerCreateFull(Layer* self, Layer *lprev, int nneurons){
+    LayerCreate(self, LAYER_FULL, lprev, nneurons, 1, 1, nneurons, lprev->noutputs * nneurons);
 }
 
-Layer* layerCreateConv(Layer* lprev, int depth, int width, int height, int kernsize, int padding, int stride){
-    Layer* self = LayerCreate(LAYER_CONV, lprev, depth, width, height, depth, depth * lprev->depth * kernsize * kernsize);
+void layerCreateConv(Layer* self, Layer* lprev, int depth, int width, int height, int kernsize, int padding, int stride){
+    LayerCreate(self, LAYER_CONV, lprev, depth, width, height, depth, depth * lprev->depth * kernsize * kernsize);
     self->conv.kernsize = kernsize;
     self->conv.padding = padding;
     self->conv.stride = stride;
-    return self;
 }
 
 void layerDestroy(Layer *l){
@@ -57,15 +52,18 @@ void layerSetInputs(Layer *l, fixed_t *inputs){
         for (int i = 0; i < l->noutputs; i++){
             l->outputs[i] = inputs[i];
         }
+
         //start feedforward
         while (l->lnext != NULL){
             l = l->lnext;
+            
             layerFeedForward(l);
         }        
     }
     else{
         printf("Error: layerSetInputs called on non-input layer\n");
     }
+    
 }
 
 void layerGetOutputs(Layer *l, fixed_t *outputs){
@@ -122,31 +120,23 @@ void layerFeedForwConv(Layer* self){
                 }
                 reLU(&sum);
                 self->outputs[i++] = sum;
-                printf("%f\n", FIXED_TO_FLOAT(sum));
             }
         }
     }
 }
 
 void layerFeedForwFull(Layer* l){
+    int k = 0;
     for (int i = 0; i < l->noutputs; i++){
         fixed_t sum = l->biases[i];
-        for (int j = 0; j < l->nweights; j++){
-            sum += FIXED_MUL(l->weights[j], l->lprev->outputs[j]);
+        for (int j = 0; j < l->lprev->noutputs; j++){
+            sum += FIXED_MUL(l->weights[k++], l->lprev->outputs[j]);
         }
         l->outputs[i] = sum;
-        reLU(&l->outputs[i]);
     }
+    
 
     if (l->lnext != NULL){
-        //softmax
-        fixed_t sum = 0;
-        for (int i = 0; i < l->noutputs; i++){
-            sum += l->outputs[i];
-        }
-        for (int i = 0; i < l->noutputs; i++){
-            l->outputs[i] = FIXED_DIV(l->outputs[i], sum);
-        }
     } else {
         //relu
         for (int i = 0; i < l->noutputs; i++){
@@ -161,10 +151,12 @@ void layerFeedForward(Layer *l){
         return;
     }
     else if (l->type == LAYER_FULL){
+        
         layerFeedForwFull(l);
     }
     else if (l->type == LAYER_CONV){
         layerFeedForwConv(l);
+        
     }
     else{
         printf("Error: layerFeedForward called on unknown layer type\n");

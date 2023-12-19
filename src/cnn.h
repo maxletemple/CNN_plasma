@@ -40,10 +40,10 @@ typedef struct _Layer{
 
 } Layer;
 
-Layer* layerCreate(LayerType type, Layer *lprev, int depth, int width, int height, int nbiases, int nweights);
-Layer* layerCreateInput(int depth, int width, int height);
-Layer* layerCreateFull(Layer *lprev, int nneurons);
-Layer* layerCreateConv(Layer* lprev, int depth, int width, int height, int kernsize, int padding, int stride);
+void layerCreate(Layer *self, LayerType type, Layer *lprev, int depth, int width, int height, int nbiases, int nweights);
+void layerCreateInput(Layer *self, int depth, int width, int height);
+void layerCreateFull(Layer *self, Layer *lprev, int nneurons);
+void layerCreateConv(Layer *self, Layer* lprev, int depth, int width, int height, int kernsize, int padding, int stride);
 
 void layerDestroy(Layer *l);
 
