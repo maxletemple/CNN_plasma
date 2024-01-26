@@ -1,6 +1,5 @@
 #include "cnn.h"
 #include <stdio.h>
-#include <stdlib.h>
 
 void LayerCreate(Layer *self, LayerType type, Layer *lprev, int depth, int width, int height, int nbiases, int nweights)
 {
